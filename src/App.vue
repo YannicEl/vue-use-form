@@ -24,7 +24,12 @@ const form = useForm({
 });
 
 const login = () => {
-	const { email, password } = form;
+	if (!form.isValid) {
+		alert('Form is not valid');
+		return;
+	}
+
+	const { email, password } = form.values;
 	console.log(email, password);
 };
 </script>
