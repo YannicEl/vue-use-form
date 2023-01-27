@@ -1,4 +1,4 @@
-import { computed, ComputedRef, reactive, ref, UnwrapNestedRefs } from 'vue';
+import { computed, ComputedRef, reactive, ref, Ref, UnwrapNestedRefs } from 'vue';
 import { ValidatorFn } from '../utils/validators';
 
 export type FormOptions<Key extends PropertyKey> = Record<
@@ -6,27 +6,55 @@ export type FormOptions<Key extends PropertyKey> = Record<
 	[initialValue: string, validators?: ValidatorFn[]]
 >;
 
-export type Return<T extends PropertyKey> = Record<
-	T,
-	{ value: string; error: ComputedRef<boolean> }
->;
+export type Return<T extends PropertyKey> = {
+	isValid: ComputedRef<boolean>;
+	values: Record<T, Ref<string>>;
+	fields: Record<T, { value: Ref<string>; error: ComputedRef<boolean> }>;
+};
 
-export function useForm<T>(fields: FormOptions<keyof T>) {
-	const ret: any = {};
+export function useForm<T>(
+	options: FormOptions<keyof T>
+): UnwrapNestedRefs<Return<keyof T>> {
+	const fields: Record<keyof T, { value: Ref<string>; error: ComputedRef<boolean> }> =
+		{} as any;
+	const values: Record<keyof T, Ref<string>> = {} as any;
 
-	for (const key in fields) {
-		const [initialValue, validators = []] = fields[key];
+	for (const key in options) {
+		const [initialValue, validators = []] = options[key];
 
 		const value = ref(initialValue);
 
 		const error = computed(() => {
-			const isError =
-				validators.map((fn) => fn(value.value)).filter((e) => !Boolean(e)).length > 0;
-			return isError;
+			let hasError = false;
+			validators.forEach((fn) => {
+				if (!hasError) {
+					hasError = !fn(value.value);
+				}
+			});
+			return hasError;
 		});
 
-		ret[key] = { value, error };
+		values[key] = value;
+		fields[key] = { value, error };
 	}
 
-	return reactive(ret) as UnwrapNestedRefs<Return<keyof T>>;
+	// Checks if all fields in the form are valid
+	const isValid = computed(() => {
+		let isValid = true;
+		for (const key in fields) {
+			const { error } = fields[key];
+			if (isValid) {
+				isValid = !error.value;
+			}
+		}
+		return isValid;
+	});
+
+	const ret = {
+		isValid,
+		values,
+		fields,
+	};
+
+	return reactive(ret);
 }

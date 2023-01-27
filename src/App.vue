@@ -1,30 +1,20 @@
 <template>
 	<h1>Login</h1>
-	<form @submit.prevent="login">
-		<label for="email">
-			Email:
-			<input
-				id="email"
-				type="email"
-				v-model="form.email.value"
-				:class="{ error: form.email.error }"
-			/>
-		</label>
 
-		<label for="password">
-			Password:
-			<input
-				id="password"
-				type="password"
-				v-model="form.password.value"
-				:class="{ error: form.password.error }"
-			/>
-		</label>
+	<form @submit.prevent="login" class="flex flex-col gap-4">
+		<FormInput label="Email" type="email" :field="form.fields.email" />
+		<FormInput label="Password" type="password" :field="form.fields.password" />
+
 		<button>Login</button>
 	</form>
+
+	<pre>
+    {{ form }}
+  </pre>
 </template>
 
 <script setup lang="ts">
+import FormInput from './components/FormInput.vue';
 import { useForm } from './composables/useForm';
 import { email, minLength, required } from './utils/validators';
 
